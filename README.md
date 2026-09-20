@@ -106,45 +106,69 @@ Laundry costs $1.75 wash, $1.75 dry, app-based. On noise: moderate; the building
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
-
-**Question:**
+**Question:** Are the CS 340 midterm and final open-book or closed-book?
 
 **Answer:**
 
+```text
+The CS 340 midterm and final are both open-book.
+
+Sources: `course_cs_340_exams.txt` and `course_cs_340.txt`
+
+Sources retrieved: course_cs_210.txt, course_cs_210_exams.txt, course_cs_340.txt, course_cs_340_exams.txt, money_textbooks.txt
 ```
-```
 
-**My relevance cutoff:**
+This answer was collected with the original 0.60 cutoff. I retained the
+starter's grounding instruction because it requires using only supplied
+documents, refusing unsupported answers, and naming source filenames.
+The sample correctly distinguishes CS 340 from the CS 210 passages
+also retrieved.
 
-<!-- The number you set in config.py, and how you got there.
+**My relevance cutoff:** 0.69
+**Top-k:** 5
 
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
+The five in-corpus questions had best distances from 0.2442 to 0.5583.
+The five out-of-scope questions ranged from 0.8246 to 0.9340.
+I chose 0.69, approximately halfway between the highest in-corpus
+distance and the lowest out-of-scope distance.
 
-     Milestone 4. -->
+This cutoff separates all ten measured questions. The original 0.60
+also separates them, but 0.69 provides more room for relevant questions
+with different wording. That also risks admitting unrelated questions
+whose distances fall between 0.60 and 0.69. These ten examples do not
+guarantee performance on new questions.
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| What signature is required to withdraw from a course? | Yes | 0.5583 |
+| How much does one wash cycle cost in Morrow House? | Yes | 0.2442 |
+| Are the CS 340 midterm and final open-book or closed-book? | Yes | 0.4418 |
+| How many hours per week outside class does ECON 101 require? | Yes | 0.3249 |
+| Which midterm score is dropped in STAT 150? | Yes | 0.3283 |
+| What is the capital of Mongolia? | No | 0.8246 |
+| How do I change the oil in a diesel engine? | No | 0.9340 |
+| Who won the 1994 World Cup? | No | 0.8859 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.8442 |
+| How do I write a for loop in Rust? | No | 0.8960 |
 
 ## How I Used AI
 
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
+**1. Understanding the Python environment.**
+I used Codex to learn how a virtual environment separates project
+dependencies from the system Python. When my environment check failed,
+it explained the Python version mismatch and guided me through rebuilding
+the environment with Python 3.13. I ran the commands and shared the output
+to verify that all ten checks passed.
 
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
-
-     Milestone 5. -->
-
-**1.**
-
-**2.**
+**2. Understanding chunking and retrieval.**
+I used Codex's explanations and drafted examples—including questions,
+criteria, and chunker code—to learn how the pipeline works. Keeping short
+posts together showed how a chunk can preserve both a fact and its context.
+Comparing retrieval distances helped me understand the cutoff tradeoff:
+a lower threshold can reject relevant questions, while a higher one can
+admit unrelated questions. I applied a 0.69 cutoff and checked the output
+to confirm that the relevant question passed and the unrelated question
+was refused.
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
