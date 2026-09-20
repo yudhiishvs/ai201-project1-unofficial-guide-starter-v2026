@@ -19,78 +19,73 @@ pipeline earns credit; *"80% seemed reasonable"* does not.
 
 ## 1. Retrieved chunks contain the answer
 
-For at least 4 of my 5 test questions, the retrieved chunks include one that
-contains the answer.
+For at least 4 of my 5 test questions in questions.py, the top five
+retrieved chunks include at least one that explicitly contains the
+information needed to answer the question.
 
 **Why this target:**
-<!-- e.g. "One of my questions is about a topic only two documents mention, so
-     I expect that one to be hard." -->
+My questions ask for specific facts stated in short campus-life documents,
+so retrieval should find most of them. Requiring four allows one miss
+among documents with similar topics, while three would allow too many
+of these straightforward questions to fail.
 
 ---
 
 ## 2. Every answer names a source
 
-Every answer the system produces names at least one source document.
+For all five in-corpus test questions in questions.py, the system's
+answer text names at least one source filename. A separate list of
+retrieved documents does not count as a citation in the answer.
 
 **Why this target:**
-<!-- Why all five and not four? What about your setup makes that achievable —
-     or what would have to go wrong for it not to be? -->
+Users need to know where an answer came from so they can check it.
+The pipeline supplies source filenames to the model, so requiring a
+citation in every answer is reasonable.
 
 ---
 
 ## 3. The relevance gate stops out-of-corpus questions
 
-When I ask a question my documents clearly don't cover, the relevance gate
-stops it and the system returns "I don't have enough information about that" —
-in at least 4 of 5 tries.
-
-<!-- The five questions are the ones in `OUT_OF_SCOPE` at the bottom of
-     `questions.py`, and `run_eval.py` puts them through the gate and writes
-     what happened into your run log. Swap them for your own if you'd rather —
-     just keep five of them, or the "4 of 5" above has nothing to be 4 of. -->
+For at least 4 of the 5 questions in OUT_OF_SCOPE, the relevance gate
+blocks generation and returns "I don't have enough information about
+that" rather than a substantive answer.
 
 **Why this target:**
-<!-- What did your distances look like when you set the cutoff in Milestone 4?
-     Was there a clean gap, or did the two groups overlap? -->
+These documents cover campus life, so the system should refuse questions
+about unrelated subjects. Four out of five allows one misleading
+similarity match, but a lower target would tolerate too many unsupported
+answers. I will measure the distances later rather than assume the
+default cutoff works.
 
 ---
 
-## 4. Something about your chunks
+## 4. Chunks preserve complete, identifiable information
 
-<!-- YOU WRITE THIS ONE.
-
-     How would you know if your chunks were the right size? Name something
-     countable or observable.
-
-     Examples of the right shape — don't copy these, they should come from
-     what you actually saw in Milestone 3:
-       - "At least 4 of 5 sampled chunks read as a complete thought, with no
-          sentence cut in half at either end."
-       - "No chunk is shorter than 200 characters, since anything below that
-          in my corpus turned out to be a heading with no content under it." -->
-
-
+Of five chunks printed by python app.py chunks -n 5, at least four
+contain no sentence cut off at either boundary and identify the course,
+building, or policy their information describes within the chunk text.
 
 **Why this target:**
-
-
+The campus-life documents are short, and details such as laundry prices
+or exam rules need their building or course name to be useful. Four of
+five requires most sampled chunks to stand alone while allowing one
+boundary case that needs improvement.
 
 ---
 
-## 5. Your choice
+## 5. Answers accurately report the requested facts
 
-<!-- YOU WRITE THIS ONE TOO.
-
-     Pick something you actually care about getting right. It could be about
-     speed, about refusals, about a particular kind of question your corpus
-     handles badly, about source attribution being correct rather than merely
-     present — anything, as long as it names a number or an observable
-     outcome. -->
-
-
+For at least 4 of my 5 test questions, the generated answer states the
+correct requested fact and contains no claim that contradicts the
+corresponding source document. I will check answers against the documents,
+rather than count an expected phrase alone as proof of correctness.
 
 **Why this target:**
-
+These questions concern concrete facts, including a price, workload,
+and assessment rules. A response can include the expected phrase and
+still give a wrong answer, so checking the full statement matters.
+Four correct answers sets a useful standard while leaving room to
+diagnose one failure.
 
 
 ---
