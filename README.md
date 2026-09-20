@@ -1,6 +1,6 @@
 # The Unofficial Guide
 
-<!-- Replace this line with your name and which corpus you picked. -->
+Yudhiishbala V Senthilkumar — Corpus: campus_life
 
 > **This file is your submission.** Fill it in as you go — most sections get
 > written during the milestone that produces them, not at the end.
@@ -21,11 +21,12 @@
 
 ## What This Does
 
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
+This project answers questions about housing, dining, courses, and campus
+policies using 88 campus-life documents. It retrieves relevant passages
+and uses Gemini to answer with source filenames. The starter produced
+88 chunks averaging 317 characters, with lengths ranging from 178 to 549
+characters. Its first successful answer explained the housing lottery
+and cited admin_housing_lottery.txt.
 
 ## Chunking Strategy
 
