@@ -18,6 +18,7 @@ rest of the project if they were wrong:
 """
 
 import os
+import re
 import shutil
 from dataclasses import dataclass
 
@@ -185,7 +186,7 @@ def search(
     variant: str = "default",
 ) -> list[Result]:
     """
-    Retrieve the chunks closest in meaning to a question.
+    Retrieve chunks using semantic similarity and keyword overlap.
 
     Returns them nearest-first, each with its distance.
     """
@@ -201,7 +202,7 @@ def search(
 
     raw = collection.query(
         query_embeddings=embed([question]),
-        n_results=min(top_k, collection.count()),
+        n_results=collection.count(),
     )
 
     results: list[Result] = []
@@ -217,7 +218,27 @@ def search(
                 produced_by=str(meta.get("produced_by", "unknown")),
             )
         )
-    return results
+    if not results:
+        return results
+
+    # Reciprocal rank fusion keeps the semantic distance available to the
+    # relevance gate while rewarding exact names and numbers in the corpus.
+    from rank_bm25 import BM25Okapi
+
+    tokenize = lambda value: re.findall(r"[a-z0-9]+", value.lower())
+    tokens = [tokenize(result.text) for result in results]
+    bm25 = BM25Okapi(tokens)
+    keyword_scores = bm25.get_scores(tokenize(question))
+    keyword_order = sorted(range(len(results)), key=lambda i: (-keyword_scores[i], i))
+    keyword_rank = {index: rank for rank, index in enumerate(keyword_order, 1)}
+    fused_order = sorted(
+        range(len(results)),
+        key=lambda i: (
+            -(1 / (60 + i + 1) + 1 / (60 + keyword_rank[i])),
+            i,
+        ),
+    )
+    return [results[i] for i in fused_order[:top_k]]
 
 
 def index_exists(corpus: str | None = None, variant: str = "default") -> bool:
