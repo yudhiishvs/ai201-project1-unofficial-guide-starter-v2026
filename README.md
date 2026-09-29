@@ -179,117 +179,94 @@ was refused.
 
 # Unit 2
 
-<!-- These sections get ADDED to what's already above. Don't delete or rewrite
-     unit 1 — the point is that someone can see what you said before you knew
-     how it went. -->
-
 ## Run Log — Before
 
-<!-- Your five criteria, three runs each. `python run_eval.py --label before`
-     runs the questions, puts the OUT_OF_SCOPE ones through the gate, and
-     writes it all into results/ for you. Targets come from criteria.md; the
-     verdict column is your call.
-
-     Criterion 3 is measured in one deterministic pass rather than three, so
-     the same number goes in all three run columns. That's correct, not lazy.
-
-     Milestone 1. -->
+Raw evidence: [results/run_2026-09-29_1531_before.md](results/run_2026-09-29_1531_before.md). `run_eval.py::main` made three uncached model calls per in-corpus question on 2026-09-29. I inspected each answer against the original corpus documents. Retrieval and chunking are deterministic, so their measurements repeat in each column. The gate was checked once per out-of-scope question, as specified by `run_eval.py::check_out_of_scope`.
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Top five retrieved chunks contain the answer | at least 4/5 questions | 5/5 | 5/5 | 5/5 | MET |
+| 2. Answer text names a source filename | 5/5 questions | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate refuses out-of-corpus questions | at least 4/5 questions | 5/5 | 5/5 | 5/5 | MET |
+| 4. Sampled chunks preserve complete, identified information | at least 4/5 chunks | 5/5 | 5/5 | 5/5 | MET |
+| 5. Answers state the correct facts without contradictions | at least 4/5 questions | 5/5 | 5/5 | 5/5 | MET |
 
-<!-- Underneath, paste the REAL output for each criterion from one of your
-     runs — the actual text your system produced, not a description of it.
-     Name the file and function that produced it. -->
+### Actual output used to judge each criterion
+
+**1 — Retrieval.** `store.py::search` returned `admin_withdrawal_deadline.txt` for the withdrawal question; the actual chunk from `chunker.py::split_documents` says:
+
+```text
+On the withdrawal deadline
+
+Withdrawal is a different thing from dropping and has a different date. Dropping ends at week six. Withdrawal runs to week ten, requires an adviser signature, and puts a W on the transcript that doesn't affect GPA. The two dates appear on different pages of the registrar's site and this catches people every year.
+```
+
+The top five also included the answer-bearing `housing_morrow_house_laundry.txt`, `course_cs_340_exams.txt`, `course_econ_101_workload.txt`, and `course_stat_150_exams.txt` for the other four questions. Their filenames appear in the raw run log's retrieved sources; I checked their text against the requested facts.
+
+**2 — Source citation.** `generate.py::answer_from_chunks` produced this actual run 1 answer for CS 340:
+
+```text
+The CS 340 midterm and final are both open-book. 
+
+Sources: `course_cs_340_exams.txt` and `course_cs_340.txt`
+```
+
+The raw log shows a filename within each of the other 14 answer texts as well; the retrieved-source list alone was not counted.
+
+**3 — Gate.** `run_eval.py::check_out_of_scope`, using `store.py::search` and `gate.py::check`, recorded this actual row:
+
+```text
+What is the capital of Mongolia? | 0.825 | refused
+```
+
+For each of the five out-of-scope questions, `gate.py` returned the refusal text `I don't have enough information about that.` and no model call was made.
+
+**4 — Chunk boundaries.** `app.py chunks -n 5` printed this actual sample from `chunker.py::split_documents`:
+
+```text
+Chunk 3  |  source: course_hist_118_workload.txt#0  |  produced by: chunker.py::split_documents
+Workload for HIST 118 Modern World History
+
+People keep asking so: a lot of reading, about 120 pages a week, but no problem sets. That's real time, not optimistic time.
+
+It's front-loaded — the first month is heavier than the rest, partly because you're learning the format.
+```
+
+The other four complete samples are pasted in Unit 1 under Sample Chunks. All five have a complete sentence at each boundary and a heading naming the relevant subject.
+
+**5 — Factual accuracy.** These are the five actual run 1 answers from `generate.py::answer_from_chunks`; I compared them with `admin_withdrawal_deadline.txt`, `housing_morrow_house_laundry.txt`, `course_cs_340_exams.txt`, `course_econ_101_workload.txt`, and `course_stat_150_exams.txt`, respectively:
+
+```text
+An adviser signature is required to withdraw from a course (admin_withdrawal_deadline.txt).
+
+One wash cycle in Morrow House costs $1.50. 
+
+Source: housing_morrow_house_laundry.txt (also mentioned in housing_morrow_house.txt)
+
+The CS 340 midterm and final are both open-book. 
+
+Sources: `course_cs_340_exams.txt` and `course_cs_340.txt`
+
+ECON 101 requires 4 hours a week outside of class. 
+
+Source: `course_econ_101_workload.txt` (also mentioned in `course_econ_101.txt`)
+
+In STAT 150, the lowest midterm score is dropped. 
+
+Source: `course_stat_150.txt` (and `course_stat_150_exams.txt`)
+```
 
 ## Verdicts
 
-<!-- MET or MISSED for each of the five, against the target you wrote last
-     unit — not a new one. Plus a sentence on how you decided. That sentence
-     matters most where it was close.
-
-     If your target said 4 of 5 and your runs came out 4, 3, 4, that's a MISS.
-     The target has to hold, not show up occasionally.
-
-     Milestone 2. -->
-
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1 | Answer in top five | MET | Each question's retrieved sources included a chunk explicitly stating its requested fact in all three deterministic passes. |
+| 2 | Filename in answer | MET | Every one of the 15 answer texts names at least one source filename. |
+| 3 | Out-of-corpus refusal | MET | All five unrelated questions were blocked at the 0.69 gate cutoff; the target was four. |
+| 4 | Complete, identifiable chunk | MET | All five sampled chunks had complete sentence boundaries and identified their subject in the text. |
+| 5 | Correct, noncontradictory answer | MET | All 15 answers stated the fact in the corresponding document with no contradictory claim. |
 
 ## Diagnoses
 
-<!-- For each miss: which stage caused it, and how. The stage alone isn't
-     enough — you need the mechanism.
+There were no missed criteria, so there is no observed criterion failure to assign to a pipeline stage. These five questions are straightforward and the targets were relatively safe. I would tighten criterion 1 next time to require the answer-bearing chunk in the top two for at least four questions, because the baseline top two only met that standard for Morrow House and STAT 150 (2/5). The retrieval stage ranked other topic-adjacent chunks above the right one for CS 340 and ECON 101. For example, the CS 210 exam chunk ranked second for the CS 340 question, ahead of `course_cs_340.txt`. This is a ranking weakness even though the answer-bearing CS 340 chunk ranked first.
 
-     Not a diagnosis: "Question 3 didn't work."
-     A diagnosis:     "Question 3 asks about laundry costs. The answer is in
-                       one sentence that got split across two chunks, so
-                       neither chunk on its own contains it."
-
-     The five stages: loading → chunking → embedding → retrieval → generation.
-
-     Look for a pattern. If three misses all ask about numbers, that's one
-     problem, not three.
-
-     Missed nothing? Say so, then say honestly whether your targets were set
-     low, and which one you'd tighten and to what.
-
-     Milestone 3. -->
-
-## The Improvement
-
-**What I changed:**
-
-**Why I picked it:**
-
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
-
-### Run Log — After
-
-<!-- Same format, same five criteria, three runs each.
-     `python run_eval.py --label after` -->
-
-| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
-|---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
-
-**Did it help?**
-
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
-
-     Milestone 4. -->
-
-## What's Still Broken
-
-<!-- For each criterion still missed after your fix: what you'd do about it,
-     and why you stopped where you did.
-
-     "I ran out of time" is fine if it's true. Pretending nothing is left is
-     not.
-
-     Milestone 5. -->
-
-## What I'd Do Differently
-
-<!-- Knowing what you know now — which of your five criteria would you write
-     differently, and why?
-
-     Milestone 5. -->
