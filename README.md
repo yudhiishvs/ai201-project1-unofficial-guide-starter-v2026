@@ -268,5 +268,77 @@ Source: `course_stat_150.txt` (and `course_stat_150_exams.txt`)
 
 ## Diagnoses
 
-There were no missed criteria, so there is no observed criterion failure to assign to a pipeline stage. These five questions are straightforward and the targets were relatively safe. I would tighten criterion 1 next time to require the answer-bearing chunk in the top two for at least four questions, because the baseline top two only met that standard for Morrow House and STAT 150 (2/5). The retrieval stage ranked other topic-adjacent chunks above the right one for CS 340 and ECON 101. For example, the CS 210 exam chunk ranked second for the CS 340 question, ahead of `course_cs_340.txt`. This is a ranking weakness even though the answer-bearing CS 340 chunk ranked first.
+There were no missed criteria, so there is no observed criterion failure to assign to a pipeline stage. These five questions are straightforward and the targets were relatively safe. I would tighten criterion 1 next time to require both of the top two chunks to contain the answer for at least four questions, because the baseline met that stronger standard only for Morrow House and STAT 150 (2/5). The retrieval stage ranked other topic-adjacent chunks above the right one for CS 340 and ECON 101. For example, the CS 210 exam chunk ranked second for the CS 340 question, ahead of `course_cs_340.txt`. This is a ranking weakness even though the answer-bearing CS 340 chunk ranked first.
 
+## The Improvement
+
+**What I changed:** In `store.py::search`, I kept the same campus-life corpus, chunks, embedding model, five-result limit, and relevance cutoff. Retrieval now combines semantic rank with BM25 keyword rank using reciprocal rank fusion. The returned chunks still carry their original cosine distances, and `gate.py::check` still uses the smallest distance. This is one retrieval change.
+
+**Why I picked it:** The baseline passed all original criteria, but its second result was a different course for CS 340 and ECON 101. Those questions contain exact course identifiers. Keyword rank can reward matching those identifiers so the model sees more answer-bearing context early.
+
+### Run Log — After
+
+Raw evidence: [results/run_2026-09-29_1533_after.md](results/run_2026-09-29_1533_after.md). Same five questions, out-of-scope set, corpus, index, model, cutoff, and three uncached calls per in-corpus question. I judged the full answer text against the same documents.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Top five retrieved chunks contain the answer | at least 4/5 questions | 5/5 | 5/5 | 5/5 | MET |
+| 2. Answer text names a source filename | 5/5 questions | 5/5 | 5/5 | 5/5 | MET |
+| 3. Gate refuses out-of-corpus questions | at least 4/5 questions | 5/5 | 5/5 | 5/5 | MET |
+| 4. Sampled chunks preserve complete, identified information | at least 4/5 chunks | 5/5 | 5/5 | MET |
+| 5. Answers state the correct facts without contradictions | at least 4/5 questions | 5/5 | 5/5 | 5/5 | MET |
+
+### Actual output after the change
+
+**1 — Retrieval.** `store.py::search` returned `course_cs_340_exams.txt` first and `course_cs_340.txt` second for the CS 340 question. The same source chunk quoted above says that its midterm and final are both open-book. For ECON 101, `course_econ_101_workload.txt` and `course_econ_101.txt` became the top two. Both top two contained the answer for four of five questions after the change, versus two of five before it. The withdrawal question still had only one answer-bearing result in the top two.
+
+**2 — Source citation and 5 — Factual accuracy.** These are the five actual run 1 answers from `generate.py::answer_from_chunks`; each names a file in the answer text, and each requested fact matches the corresponding original document:
+
+```text
+An adviser signature is required to withdraw from a course (admin_withdrawal_deadline.txt).
+
+One wash cycle in Morrow House costs $1.50 (housing_morrow_house.txt and housing_morrow_house_laundry.txt).
+
+The CS 340 midterm and final are both open-book (Sources: `course_cs_340_exams.txt` and `course_cs_340.txt`).
+
+ECON 101 requires 4 hours a week outside of class. 
+
+This information comes from the documents `course_econ_101_workload.txt` and `course_econ_101.txt`.
+
+In STAT 150, the lowest midterm score is dropped. 
+
+Source: `course_stat_150.txt` (and also `course_stat_150_exams.txt`)
+```
+
+**3 — Gate.** `run_eval.py::check_out_of_scope` recorded this actual row after the change:
+
+```text
+What is the capital of Mongolia? | 0.869 | refused
+```
+
+All five out-of-scope questions were refused. Their individual distances are in the raw after log. They are checked once because retrieval and the comparison with the fixed cutoff are deterministic.
+
+**4 — Chunks.** `app.py chunks -n 5` still produces the five complete chunks pasted in Unit 1, including this actual output from `chunker.py::split_documents`:
+
+```text
+Chunk 3  |  source: course_hist_118_workload.txt#0  |  produced by: chunker.py::split_documents
+Workload for HIST 118 Modern World History
+
+People keep asking so: a lot of reading, about 120 pages a week, but no problem sets. That's real time, not optimistic time.
+
+It's front-loaded — the first month is heavier than the rest, partly because you're learning the format.
+```
+
+**Did it help?** It helped the narrower ranking weakness: questions with two answer-bearing chunks in the top two rose from 2/5 to 4/5. The original five criterion scores remained at their ceiling. This test cannot show an improvement in final answer accuracy because every before answer was already correct. The hybrid search also pulled some irrelevant chunks farther down the list, so it did not make every retrieved result cleaner.
+
+## What's Still Broken
+
+No original criterion remained missed after the change. Retrieval still places `admin_add_drop_deadline.txt`, which discusses dropping rather than withdrawal, second for the withdrawal question. It also returns unrelated chunks later in some top-five lists. Next I would test a larger, held-out question set with paraphrases and similar course or building names and score answer-bearing rank separately from answer accuracy. I stopped after one measured change so its effect is attributable to that change, as this unit requires.
+
+## What I'd Do Differently
+
+I would rewrite criterion 1 next time to require **both** of the top two chunks to contain the answer for at least four of five questions, while keeping the original criterion unchanged here. The original top-five target was useful for checking recall, but all five passed while some second-ranked chunks were about another course. A stricter ranking measure would expose that weakness directly.
+
+## How I Used AI in Unit 2
+
+I used Codex to run the uncached evaluation, inspect retrieved chunks and source documents, implement the single hybrid retrieval change, and draft this comparison. I checked each generated answer against the corpus rather than treating its expected phrase as proof of correctness. The measurements and full generated outputs remain in `results/` for review.
